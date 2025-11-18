@@ -676,6 +676,7 @@
             modGain.connect(carrier.frequency);
 
             carrier.connect(toneGain);
+            carrier.connect(masterGain);
 
             carrier.start();
             modOsc.start();
