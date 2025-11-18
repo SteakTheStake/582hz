@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>582 Hz Tone Generator</title>
+<style>
+    body {
+        background: #f5f5f5;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-family: Arial, sans-serif;
+    }
+    button {
+        padding: 20px 40px;
+        font-size: 1.5rem;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        background: #333;
+        color: white;
+        transition: background 0.2s;
+    }
+    button:hover {
+        background: #555;
+    }
+</style>
+</head>
+<body>
+
+<button id="controlBtn">Start</button>
+
+<script>
+    let audioCtx = null;
+    let oscillator = null;
+    let playing = false;
+
+    const btn = document.getElementById("controlBtn");
+
+    btn.addEventListener("click", () => {
+        if (!playing) {
+            // Start tone
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            oscillator = audioCtx.createOscillator();
+            oscillator.type = "sine";
+            oscillator.frequency.value = 582; // Hz
+            oscillator.connect(audioCtx.destination);
+            oscillator.start();
+
+            playing = true;
+            btn.textContent = "Stop";
+        } else {
+            // Stop tone
+            oscillator.stop();
+            oscillator.disconnect();
+            audioCtx.close();
+
+            playing = false;
+            btn.textContent = "Start";
+        }
+    });
+</script>
+
+</body>
+</html>
