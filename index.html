@@ -2,23 +2,29 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>582 Hz Tone Generator</title>
+<title>582 Hz FM Tone</title>
 <style>
     body {
         background: #f5f5f5;
-        height: 100vh;
+        min-height: 100vh;
+        margin: 0;
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        gap: 20px;
+        gap: 18px;
         font-family: Arial, sans-serif;
     }
+    h1 {
+        margin: 0 0 10px;
+        font-size: 1.3rem;
+        color: #333;
+    }
     button {
-        padding: 15px 35px;
-        font-size: 1.4rem;
+        padding: 12px 30px;
+        font-size: 1.2rem;
         border: none;
-        border-radius: 10px;
+        border-radius: 8px;
         cursor: pointer;
         background: #333;
         color: white;
@@ -27,65 +33,242 @@
     button:hover {
         background: #555;
     }
+    .panel {
+        background: white;
+        padding: 16px 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 260px;
+    }
+    .row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+    }
+    label {
+        font-size: 0.9rem;
+        color: #444;
+    }
     input[type=range] {
-        width: 250px;
+        flex: 1;
+    }
+    select {
+        padding: 4px 6px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+    }
+    .modes {
+        display: flex;
+        gap: 12px;
+        font-size: 0.9rem;
     }
 </style>
 </head>
 <body>
 
+<h1>582 Hz FM Synth</h1>
+
 <button id="controlBtn">Start</button>
 
-<div>
-    <label>Volume: <span id="volLabel">33%</span></label><br>
-    <input type="range" id="volumeSlider" min="0" max="100" value="33">
+<div class="panel">
+    <!-- VOLUME -->
+    <div class="row">
+        <label for="volumeSlider">Volume: <span id="volLabel">33%</span></label>
+        <input type="range" id="volumeSlider" min="0" max="100" value="33">
+    </div>
+
+    <!-- WAVEFORM -->
+    <div class="row">
+        <label for="waveform">Waveform:</label>
+        <select id="waveform">
+            <option value="sine">Sine</option>
+            <option value="square">Square</option>
+            <option value="sawtooth">Sawtooth</option>
+            <option value="triangle">Triangle</option>
+        </select>
+    </div>
+
+    <!-- MONO / POLY -->
+    <div class="row">
+        <label>Mode:</label>
+        <div class="modes">
+            <label>
+                <input type="radio" name="mode" value="mono" checked> Mono
+            </label>
+            <label>
+                <input type="radio" name="mode" value="poly"> Poly
+            </label>
+        </div>
+    </div>
+
+    <!-- FM CONTROLS -->
+    <div class="row">
+        <label for="modFreq">Mod Freq: <span id="modFreqLabel">100 Hz</span></label>
+        <input type="range" id="modFreq" min="0" max="2000" value="100">
+    </div>
+    <div class="row">
+        <label for="modDepth">FM Depth: <span id="modDepthLabel">50</span></label>
+        <input type="range" id="modDepth" min="0" max="300" value="50">
+    </div>
 </div>
 
 <script>
     let audioCtx = null;
-    let oscillator = null;
     let gainNode = null;
     let playing = false;
+    let voices = [];
 
     const btn = document.getElementById("controlBtn");
-    const slider = document.getElementById("volumeSlider");
+    const volumeSlider = document.getElementById("volumeSlider");
     const volLabel = document.getElementById("volLabel");
+    const waveformSelect = document.getElementById("waveform");
+    const modFreqSlider = document.getElementById("modFreq");
+    const modFreqLabel = document.getElementById("modFreqLabel");
+    const modDepthSlider = document.getElementById("modDepth");
+    const modDepthLabel = document.getElementById("modDepthLabel");
+    const modeRadios = document.querySelectorAll("input[name='mode']");
 
-    // Update label + live volume
-    slider.addEventListener("input", () => {
-        const vol = slider.value / 100;
-        volLabel.textContent = slider.value + "%";
-        if (gainNode) gainNode.gain.value = vol;
-    });
+    // Update labels initially
+    modFreqLabel.textContent = modFreqSlider.value + " Hz";
+    modDepthLabel.textContent = modDepthSlider.value;
 
+    function startTone() {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        gainNode = audioCtx.createGain();
+        gainNode.gain.value = volumeSlider.value / 100;
+        gainNode.connect(audioCtx.destination);
+
+        const mode = document.querySelector("input[name='mode']:checked").value;
+        const numVoices = mode === "poly" ? 3 : 1;
+        const baseFreq = 582;
+        const waveform = waveformSelect.value;
+        const modFreq = parseFloat(modFreqSlider.value);
+        const modDepth = parseFloat(modDepthSlider.value);
+
+        voices = [];
+
+        for (let i = 0; i < numVoices; i++) {
+            const carrier = audioCtx.createOscillator();
+            carrier.type = waveform;
+
+            // Slight detune for poly unison
+            let detune = 0;
+            if (mode === "poly") {
+                if (i === 1) detune = -4;
+                if (i === 2) detune = +4;
+            }
+            carrier.frequency.value = baseFreq + detune;
+
+            const modOsc = audioCtx.createOscillator();
+            modOsc.type = "sine";
+            modOsc.frequency.value = modFreq;
+
+            const modGain = audioCtx.createGain();
+            modGain.gain.value = modDepth;
+
+            // FM: modulator -> gain -> carrier.frequency
+            modOsc.connect(modGain);
+            modGain.connect(carrier.frequency);
+
+            carrier.connect(gainNode);
+
+            carrier.start();
+            modOsc.start();
+
+            voices.push({ carrier, modOsc, modGain });
+        }
+
+        playing = true;
+        btn.textContent = "Stop";
+    }
+
+    function stopTone() {
+        voices.forEach(v => {
+            try { v.carrier.stop(); } catch (e) {}
+            try { v.modOsc.stop(); } catch (e) {}
+            v.carrier.disconnect();
+            v.modOsc.disconnect();
+            v.modGain.disconnect();
+        });
+        voices = [];
+
+        if (gainNode) {
+            gainNode.disconnect();
+            gainNode = null;
+        }
+        if (audioCtx) {
+            audioCtx.close();
+            audioCtx = null;
+        }
+
+        playing = false;
+        btn.textContent = "Start";
+    }
+
+    // Start / Stop button
     btn.addEventListener("click", () => {
         if (!playing) {
-            // Start tone
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            oscillator = audioCtx.createOscillator();
-            gainNode = audioCtx.createGain();
-
-            oscillator.type = "sine";
-            oscillator.frequency.value = 582;
-            gainNode.gain.value = slider.value / 100; // default 33%
-
-            oscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-
-            oscillator.start();
-
-            playing = true;
-            btn.textContent = "Stop";
+            startTone();
         } else {
-            // Stop tone
-            oscillator.stop();
-            oscillator.disconnect();
-            gainNode.disconnect();
-            audioCtx.close();
-
-            playing = false;
-            btn.textContent = "Start";
+            stopTone();
         }
+    });
+
+    function sliderToGain(value) {
+        const x = value / 100;
+        const min = 0.0001;
+        return min * Math.pow(1 / min, x);
+    }
+
+    // Volume slider handler
+    volumeSlider.addEventListener("input", () => {
+        volLabel.textContent = volumeSlider.value + "%";
+        if (gainNode) {
+            gainNode.gain.value = sliderToGain(volumeSlider.value);
+        }
+    });
+
+
+    // Waveform select
+    waveformSelect.addEventListener("change", () => {
+        if (!playing) return;
+        const waveform = waveformSelect.value;
+        voices.forEach(v => {
+            v.carrier.type = waveform;
+        });
+    });
+
+    // Mode (mono/poly) – restart if playing
+    modeRadios.forEach(radio => {
+        radio.addEventListener("change", () => {
+            if (playing) {
+                stopTone();
+                startTone();
+            }
+        });
+    });
+
+    // FM controls – live update
+    modFreqSlider.addEventListener("input", () => {
+        const val = parseFloat(modFreqSlider.value);
+        modFreqLabel.textContent = val + " Hz";
+        if (!playing) return;
+        voices.forEach(v => {
+            v.modOsc.frequency.value = val;
+        });
+    });
+
+    modDepthSlider.addEventListener("input", () => {
+        const val = parseFloat(modDepthSlider.value);
+        modDepthLabel.textContent = val;
+        if (!playing) return;
+        voices.forEach(v => {
+            v.modGain.gain.value = val;
+        });
     });
 </script>
 
