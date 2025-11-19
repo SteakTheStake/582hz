@@ -2,8 +2,20 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>582 Hz FM Focus Synth</title>
+<title>Focus Synth</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Favicon -->
+<link rel="icon" href="/favicon.ico" type="image/x-icon">
+
+<!-- PWA meta + manifest -->
+<meta name="theme-color" content="#5f7bff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<!-- Optional, but recommended: create this icon file -->
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+
 <style>
     :root {
         --bg1: #e6f0ff;
@@ -166,6 +178,15 @@
         background: rgba(255,255,255,0.9);
     }
 
+    input[type="text"] {
+        flex: 1;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(15,23,42,0.12);
+        font-size: 0.9rem;
+        background: rgba(255,255,255,0.95);
+    }
+
     .modes {
         display: flex;
         gap: 12px;
@@ -259,6 +280,59 @@
         accent-color: var(--accent);
     }
 
+    /* Install banner */
+    .hidden {
+        display: none !important;
+    }
+
+    .install-banner {
+        position: fixed;
+        bottom: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        max-width: 480px;
+        width: 100%;
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow:
+            0 18px 40px rgba(15, 23, 42, 0.24),
+            0 0 0 1px rgba(15, 23, 42, 0.06);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        z-index: 40;
+        backdrop-filter: blur(16px);
+        font-size: 0.85rem;
+        color: var(--text-soft);
+    }
+
+    .install-banner strong {
+        color: var(--text-main);
+    }
+
+    .install-banner button {
+        padding: 6px 14px;
+        font-size: 0.8rem;
+        border-radius: 999px;
+        white-space: nowrap;
+    }
+
+    .install-banner .install-actions {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .install-banner .install-close {
+        background: transparent;
+        color: var(--text-soft);
+        box-shadow: none;
+        padding: 4px 6px;
+        min-width: auto;
+    }
+
     /* ------- Mobile tweaks ------- */
     @media (max-width: 768px) {
         body {
@@ -315,6 +389,18 @@
 </style>
 </head>
 <body>
+
+<!-- Install app banner -->
+<div id="installBanner" class="install-banner hidden">
+    <span id="installText">
+        <strong>Install FM Focus?</strong> Use it like a mini app with better background playback.
+    </span>
+    <div class="install-actions">
+        <button id="installBtn">Install</button>
+        <button id="installClose" class="install-close" aria-label="Dismiss">✕</button>
+    </div>
+</div>
+
 <div class="page">
 
     <h1>582 Hz FM Focus Synth</h1>
@@ -384,9 +470,9 @@
             </div>
         </div>
 
-        <!-- NOISE MASKER PANEL -->
+        <!-- NOISE & AMBIENCE PANEL -->
         <div class="panel">
-            <div class="panel-title">Noise Masker</div>
+            <div class="panel-title">Noise & Ambience</div>
 
             <div class="row">
                 <label>
@@ -398,9 +484,12 @@
             <div class="row">
                 <label for="noiseType">Noise type:</label>
                 <select id="noiseType">
-                    <option value="white">White</option>
-                    <option value="pink">Pink</option>
-                    <option value="brown" selected>Brown</option>
+                    <option value="white_soft">White — soft</option>
+                    <option value="white_bright">White — bright</option>
+                    <option value="pink_warm" selected>Pink — warm</option>
+                    <option value="pink_airy">Pink — airy</option>
+                    <option value="brown_soft">Brown — soft rumble</option>
+                    <option value="brown_deep">Brown — deep rumble</option>
                 </select>
             </div>
 
@@ -419,6 +508,137 @@
                 <input type="range" id="noiseHighCut" min="200" max="20000" value="8000">
             </div>
 
+            <hr style="border:none;border-top:1px solid rgba(15,23,42,0.06);margin:6px 0;">
+
+            <div class="small-label">Ambience loops</div>
+
+            <div class="row">
+                <label>
+                    <input type="checkbox" id="birdsForestEnabled">
+                    Birds in forest
+                </label>
+                <input type="range" id="birdsForestLevel" min="0" max="100" value="60">
+                <span id="birdsForestLevelLabel" class="small-label">60%</span>
+            </div>
+
+            <div class="row">
+                <label>
+                    <input type="checkbox" id="childrenAudienceEnabled">
+                    Children audience talking
+                </label>
+                <input type="range" id="childrenAudienceLevel" min="0" max="100" value="50">
+                <span id="childrenAudienceLevelLabel" class="small-label">50%</span>
+            </div>
+
+            <div class="row">
+                <label>
+                    <input type="checkbox" id="forestAmbienceEnabled">
+                    Forest ambience
+                </label>
+                <input type="range" id="forestAmbienceLevel" min="0" max="100" value="55">
+                <span id="forestAmbienceLevelLabel" class="small-label">55%</span>
+            </div>
+
+            <div class="row">
+                <label>
+                    <input type="checkbox" id="forestHeavyRainEnabled">
+                    Forest heavy rain
+                </label>
+                <input type="range" id="forestHeavyRainLevel" min="0" max="100" value="65">
+                <span id="forestHeavyRainLevelLabel" class="small-label">65%</span>
+            </div>
+
+            <div class="row">
+                <label>
+                    <input type="checkbox" id="lightRainEnabled">
+                    Light rain
+                </label>
+                <input type="range" id="lightRainLevel" min="0" max="100" value="60">
+                <span id="lightRainLevelLabel" class="small-label">60%</span>
+            </div>
+
+            <div class="row">
+                <label>
+                    <input type="checkbox" id="jungleRainBirdsEnabled">
+                    Jungle rain &amp; birds
+                </label>
+                <input type="range" id="jungleRainBirdsLevel" min="0" max="100" value="60">
+                <span id="jungleRainBirdsLevelLabel" class="small-label">60%</span>
+            </div>
+
+            <div class="row">
+                <label>
+                    <input type="checkbox" id="strongWindEnabled">
+                    Strong wind
+                </label>
+                <input type="range" id="strongWindLevel" min="0" max="100" value="55">
+                <span id="strongWindLevelLabel" class="small-label">55%</span>
+            </div>
+
+            <div class="row">
+                <label>
+                    <input type="checkbox" id="summerCricketsEnabled">
+                    Summer night crickets
+                </label>
+                <input type="range" id="summerCricketsLevel" min="0" max="100" value="55">
+                <span id="summerCricketsLevelLabel" class="small-label">55%</span>
+            </div>
+
+            <div class="row">
+                <label>
+                    <input type="checkbox" id="thunderstormRainEnabled">
+                    Thunderstorm &amp; rain
+                </label>
+                <input type="range" id="thunderstormRainLevel" min="0" max="100" value="65">
+                <span id="thunderstormRainLevelLabel" class="small-label">65%</span>
+            </div>
+
+            <div class="row">
+                <label>
+                    <input type="checkbox" id="crowdedPubEnabled">
+                    Very crowded pub / party
+                </label>
+                <input type="range" id="crowdedPubLevel" min="0" max="100" value="55">
+                <span id="crowdedPubLevelLabel" class="small-label">55%</span>
+            </div>
+
+            <div class="row">
+                <label>
+                    <input type="checkbox" id="subwayCrowdEnabled">
+                    Walking crowd (subway)
+                </label>
+                <input type="range" id="subwayCrowdLevel" min="0" max="100" value="55">
+                <span id="subwayCrowdLevelLabel" class="small-label">55%</span>
+            </div>
+
+            <div class="row">
+                <label>
+                    <input type="checkbox" id="windForestEnabled">
+                    Wind in the forest
+                </label>
+                <input type="range" id="windForestLevel" min="0" max="100" value="55">
+                <span id="windForestLevelLabel" class="small-label">55%</span>
+            </div>
+
+            <div class="row">
+                <label>
+                    <input type="checkbox" id="windySeaEnabled">
+                    Windy sea
+                </label>
+                <input type="range" id="windySeaLevel" min="0" max="100" value="55">
+                <span id="windySeaLevelLabel" class="small-label">55%</span>
+            </div>
+
+            <div class="row">
+                <label>
+                    <input type="checkbox" id="winterWindEnabled">
+                    Winter wind
+                </label>
+                <input type="range" id="winterWindLevel" min="0" max="100" value="55">
+                <span id="winterWindLevelLabel" class="small-label">55%</span>
+            </div>
+
+
             <div class="breathing-wrapper">
                 <div class="breathing-circle"></div>
                 <div class="breathing-text">
@@ -428,7 +648,7 @@
             </div>
         </div>
 
-        <!-- APPEARANCE & MOOD PANEL -->
+        <!-- APPEARANCE & PRESETS PANEL -->
         <div class="panel">
             <div class="panel-title">Display & Mood</div>
 
@@ -469,6 +689,42 @@
                 <input type="checkbox" id="rememberToggle" checked>
                 <span>Remember these display settings</span>
             </div>
+
+            <hr style="border:none;border-top:1px solid rgba(15,23,42,0.06);margin:6px 0;">
+
+            <div class="panel-title" style="margin-top:0;">Presets</div>
+
+            <div class="row">
+                <label for="builtinPresetSelect">Built-in:</label>
+                <select id="builtinPresetSelect">
+                    <option value="">Select preset…</option>
+                    <option value="deep_focus">Deep Focus</option>
+                    <option value="rainy_cafe">Rainy Café</option>
+                    <option value="fireplace_night">Fireplace Night</option>
+                    <option value="windy_cliff">Windy Cliff</option>
+                </select>
+            </div>
+
+            <div class="row">
+                <label for="userPresetSelect">Your presets:</label>
+                <select id="userPresetSelect">
+                    <option value="">None saved yet</option>
+                </select>
+            </div>
+
+            <div class="row">
+                <label for="userPresetName">Preset name:</label>
+                <input type="text" id="userPresetName" placeholder="e.g. Night Rain + Brown">
+            </div>
+
+            <div class="row">
+                <button id="savePresetBtn" style="flex:1;">Save preset</button>
+                <button id="deletePresetBtn" style="flex:1;">Delete selected</button>
+            </div>
+
+            <p class="small-label">
+                Presets remember tone, noise, ambience, and display settings on this device.
+            </p>
         </div>
     </div>
 </div>
@@ -507,6 +763,31 @@
     let noiseLPFilter = null;
     let noiseGain = null;
 
+    // Ambience loops (from ./loops/ogg/*.ogg)
+    const AMBIENCE_SOURCES = {
+        birdsForest: "./loops/ogg/birds-in-forest-loop.ogg",
+        childrenAudience: "./loops/ogg/children-audience-talking-loop.ogg",
+        forestAmbience: "./loops/ogg/forest-ambience-loop.ogg",
+        forestHeavyRain: "./loops/ogg/forest-heavy-rain-loop.ogg",
+        lightRain: "./loops/ogg/light-rain-loop.ogg",
+        jungleRainBirds: "./loops/ogg/rain-in-the-jungle-and-birds.ogg",
+        strongWind: "./loops/ogg/strong-wind-loop.ogg",
+        summerCrickets: "./loops/ogg/summer-night-crickets-loop.ogg",
+        thunderstormRain: "./loops/ogg/thunderstorm-and-rain-loop.ogg",
+        crowdedPub: "./loops/ogg/very-crowded-pub-or-party-loop.ogg",
+        subwayCrowd: "./loops/ogg/walking-crowd-at-subway-station-loop.ogg",
+        windForest: "./loops/ogg/wind-in-the-forest-loop.ogg",
+        windySea: "./loops/ogg/windy-sea-loop.ogg",
+        winterWind: "./loops/ogg/winter-wind-loop.ogg"
+    };
+
+    let ambienceBuffers = {}; // key -> AudioBuffer
+    let ambienceNodes = {};
+    Object.keys(AMBIENCE_SOURCES).forEach(key => {
+        ambienceNodes[key] = { gain: null, source: null };
+    });
+
+
     // UI elements
     const btn = document.getElementById("controlBtn");
     const backgroundToggle = document.getElementById("backgroundToggle");
@@ -533,6 +814,81 @@
     const noiseHighCutSlider = document.getElementById("noiseHighCut");
     const noiseHighCutLabel = document.getElementById("noiseHighCutLabel");
 
+    // Ambience UI controls (checkbox + slider + label for each loop)
+    const ambienceControls = {
+        birdsForest: {
+            checkbox: document.getElementById("birdsForestEnabled"),
+            slider: document.getElementById("birdsForestLevel"),
+            label: document.getElementById("birdsForestLevelLabel")
+        },
+        childrenAudience: {
+            checkbox: document.getElementById("childrenAudienceEnabled"),
+            slider: document.getElementById("childrenAudienceLevel"),
+            label: document.getElementById("childrenAudienceLevelLabel")
+        },
+        forestAmbience: {
+            checkbox: document.getElementById("forestAmbienceEnabled"),
+            slider: document.getElementById("forestAmbienceLevel"),
+            label: document.getElementById("forestAmbienceLevelLabel")
+        },
+        forestHeavyRain: {
+            checkbox: document.getElementById("forestHeavyRainEnabled"),
+            slider: document.getElementById("forestHeavyRainLevel"),
+            label: document.getElementById("forestHeavyRainLevelLabel")
+        },
+        lightRain: {
+            checkbox: document.getElementById("lightRainEnabled"),
+            slider: document.getElementById("lightRainLevel"),
+            label: document.getElementById("lightRainLevelLabel")
+        },
+        jungleRainBirds: {
+            checkbox: document.getElementById("jungleRainBirdsEnabled"),
+            slider: document.getElementById("jungleRainBirdsLevel"),
+            label: document.getElementById("jungleRainBirdsLevelLabel")
+        },
+        strongWind: {
+            checkbox: document.getElementById("strongWindEnabled"),
+            slider: document.getElementById("strongWindLevel"),
+            label: document.getElementById("strongWindLevelLabel")
+        },
+        summerCrickets: {
+            checkbox: document.getElementById("summerCricketsEnabled"),
+            slider: document.getElementById("summerCricketsLevel"),
+            label: document.getElementById("summerCricketsLevelLabel")
+        },
+        thunderstormRain: {
+            checkbox: document.getElementById("thunderstormRainEnabled"),
+            slider: document.getElementById("thunderstormRainLevel"),
+            label: document.getElementById("thunderstormRainLevelLabel")
+        },
+        crowdedPub: {
+            checkbox: document.getElementById("crowdedPubEnabled"),
+            slider: document.getElementById("crowdedPubLevel"),
+            label: document.getElementById("crowdedPubLevelLabel")
+        },
+        subwayCrowd: {
+            checkbox: document.getElementById("subwayCrowdEnabled"),
+            slider: document.getElementById("subwayCrowdLevel"),
+            label: document.getElementById("subwayCrowdLevelLabel")
+        },
+        windForest: {
+            checkbox: document.getElementById("windForestEnabled"),
+            slider: document.getElementById("windForestLevel"),
+            label: document.getElementById("windForestLevelLabel")
+        },
+        windySea: {
+            checkbox: document.getElementById("windySeaEnabled"),
+            slider: document.getElementById("windySeaLevel"),
+            label: document.getElementById("windySeaLevelLabel")
+        },
+        winterWind: {
+            checkbox: document.getElementById("winterWindEnabled"),
+            slider: document.getElementById("winterWindLevel"),
+            label: document.getElementById("winterWindLevelLabel")
+        }
+    };
+
+
     const brightnessSlider = document.getElementById("brightnessSlider");
     const brightnessLabel = document.getElementById("brightnessLabel");
     const contrastSlider = document.getElementById("contrastSlider");
@@ -541,6 +897,18 @@
     const glowLabel = document.getElementById("glowLabel");
     const themeChipsContainer = document.getElementById("themeChips");
     const shadeSelect = document.getElementById("shadeSelect");
+
+    const builtinPresetSelect = document.getElementById("builtinPresetSelect");
+    const userPresetSelect = document.getElementById("userPresetSelect");
+    const userPresetNameInput = document.getElementById("userPresetName");
+    const savePresetBtn = document.getElementById("savePresetBtn");
+    const deletePresetBtn = document.getElementById("deletePresetBtn");
+
+    const installBanner = document.getElementById("installBanner");
+    const installBtn = document.getElementById("installBtn");
+    const installClose = document.getElementById("installClose");
+    const installText = document.getElementById("installText");
+    let deferredInstallPrompt = null;
 
     // Initial labels
     modFreqLabel.textContent = modFreqSlider.value + " Hz";
@@ -551,6 +919,10 @@
     brightnessLabel.textContent = brightnessSlider.value + "%";
     contrastLabel.textContent = contrastSlider.value + "%";
     glowLabel.textContent = glowSlider.value + "%";
+    Object.values(ambienceControls).forEach(ctrl => {
+        ctrl.label.textContent = ctrl.slider.value + "%";
+    });
+
 
     // ---------- Theme presets ----------
     const themePresets = {
@@ -586,6 +958,7 @@
 
     function applyTheme(color, shade) {
         const preset = themePresets[color][shade];
+        if (!preset) return;
         const root = document.documentElement;
         root.style.setProperty("--bg1", preset.bg1);
         root.style.setProperty("--bg2", preset.bg2);
@@ -613,21 +986,47 @@
         return min * Math.pow(1 / min, x);
     }
 
+    // ---------- Noise settings ----------
     function applyNoiseColorSettings() {
         if (!noiseColorFilter) return;
         const type = noiseTypeSelect.value;
-        if (type === "white") {
-            noiseColorFilter.type = "allpass";
-            noiseColorFilter.frequency.value = 1000;
-            noiseColorFilter.Q.value = 1;
-        } else if (type === "pink") {
-            noiseColorFilter.type = "lowpass";
-            noiseColorFilter.frequency.value = 2000;
-            noiseColorFilter.Q.value = 0.7;
-        } else if (type === "brown") {
-            noiseColorFilter.type = "lowpass";
-            noiseColorFilter.frequency.value = 500;
-            noiseColorFilter.Q.value = 0.7;
+        // Base white noise, we shape it using biquads
+        switch (type) {
+            case "white_soft":
+                noiseColorFilter.type = "lowpass";
+                noiseColorFilter.frequency.value = 8000;
+                noiseColorFilter.Q.value = 0.7;
+                break;
+            case "white_bright":
+                noiseColorFilter.type = "highpass";
+                noiseColorFilter.frequency.value = 500;
+                noiseColorFilter.Q.value = 0.7;
+                break;
+            case "pink_warm":
+                noiseColorFilter.type = "lowpass";
+                noiseColorFilter.frequency.value = 4000;
+                noiseColorFilter.Q.value = 0.9;
+                break;
+            case "pink_airy":
+                noiseColorFilter.type = "peaking";
+                noiseColorFilter.frequency.value = 4000;
+                noiseColorFilter.gain.value = 3;
+                noiseColorFilter.Q.value = 0.8;
+                break;
+            case "brown_soft":
+                noiseColorFilter.type = "lowpass";
+                noiseColorFilter.frequency.value = 800;
+                noiseColorFilter.Q.value = 0.7;
+                break;
+            case "brown_deep":
+                noiseColorFilter.type = "lowpass";
+                noiseColorFilter.frequency.value = 400;
+                noiseColorFilter.Q.value = 0.9;
+                break;
+            default:
+                noiseColorFilter.type = "allpass";
+                noiseColorFilter.frequency.value = 1000;
+                noiseColorFilter.Q.value = 1;
         }
     }
 
@@ -644,6 +1043,77 @@
         }
     }
 
+    // ---------- Ambience helpers ----------
+    function loadAmbienceBuffer(key) {
+        if (!audioCtx || ambienceBuffers[key] || !AMBIENCE_SOURCES[key]) return;
+        fetch(AMBIENCE_SOURCES[key])
+            .then(res => res.arrayBuffer())
+            .then(data => new Promise((resolve, reject) => {
+                audioCtx.decodeAudioData(data, resolve, reject);
+            }))
+            .then(buffer => {
+                ambienceBuffers[key] = buffer;
+                if (playing && ambienceControls[key]?.checkbox.checked) {
+                    startAmbienceSource(key);
+                }
+            })
+            .catch(err => console.error("Error loading ambience", key, err));
+    }
+
+    function startAmbienceSource(key) {
+        if (!audioCtx || !masterGain) return;
+        const buffer = ambienceBuffers[key];
+        if (!buffer) {
+            loadAmbienceBuffer(key);
+            return;
+        }
+        const node = ambienceNodes[key];
+        if (!node.gain) {
+            node.gain = audioCtx.createGain();
+            node.gain.connect(masterGain);
+        }
+        if (node.source) {
+            try { node.source.stop(); } catch(e) {}
+            node.source.disconnect();
+        }
+        const src = audioCtx.createBufferSource();
+        src.buffer = buffer;
+        src.loop = true;
+        src.connect(node.gain);
+        src.start();
+        node.source = src;
+        updateAmbienceGain(key);
+    }
+
+    function stopAllAmbience() {
+        Object.keys(ambienceNodes).forEach(key => {
+            const node = ambienceNodes[key];
+            if (node.source) {
+                try { node.source.stop(); } catch(e) {}
+                node.source.disconnect();
+                node.source = null;
+            }
+            if (node.gain) {
+                node.gain.disconnect();
+                node.gain = null;
+            }
+        });
+    }
+
+    function updateAmbienceGain(key) {
+        const node = ambienceNodes[key];
+        const ctrl = ambienceControls[key];
+        if (!node || !node.gain || !ctrl) return;
+
+        if (!ctrl.checkbox.checked) {
+            node.gain.gain.value = 0;
+        } else {
+            node.gain.gain.value = sliderToGain(ctrl.slider.value) * 0.6;
+        }
+    }
+
+
+    // ---------- Tone ----------
     function clearToneVoices() {
         voices.forEach(v => {
             try { v.carrier.stop(); } catch(e) {}
@@ -701,10 +1171,20 @@
     }
 
     function startAudio() {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // PWA/mobile-friendly AudioContext creation
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)({
+                latencyHint: "interactive"
+            });
+        }
+        if (audioCtx.state === "suspended") {
+            audioCtx.resume();
+        }
+
         masterGain = audioCtx.createGain();
         masterGain.gain.value = sliderToGain(volumeSlider.value);
         masterGain.connect(audioCtx.destination);
+
         toneGain = audioCtx.createGain();
         const initialToneGain = toneEnabledCheckbox.checked
             ? sliderToGain(toneLevelSlider.value)
@@ -746,6 +1226,26 @@
 
         noiseSource.start();
 
+        // Ambience graph
+        Object.keys(AMBIENCE_SOURCES).forEach(key => {
+            if (!ambienceNodes[key]) ambienceNodes[key] = { gain: null, source: null };
+            const node = ambienceNodes[key];
+            if (!node.gain) {
+                node.gain = audioCtx.createGain();
+                node.gain.connect(masterGain);
+            }
+            const ctrl = ambienceControls[key];
+            updateAmbienceGain(key);
+            if (ctrl && ctrl.checkbox.checked) {
+                if (ambienceBuffers[key]) {
+                    startAmbienceSource(key);
+                } else {
+                    loadAmbienceBuffer(key);
+                }
+            }
+        });
+
+
         playing = true;
         btn.textContent = "Stop";
     }
@@ -774,6 +1274,8 @@
             noiseGain.disconnect();
             noiseGain = null;
         }
+
+        stopAllAmbience();
 
         if (toneGain) {
             toneGain.disconnect();
@@ -888,6 +1390,66 @@
         applyNoiseEQSettings();
     });
 
+    // Ambience UI events (generic)
+    Object.entries(ambienceControls).forEach(([key, ctrl]) => {
+        ctrl.slider.addEventListener("input", () => {
+            ctrl.label.textContent = ctrl.slider.value + "%";
+            if (!playing) return;
+            updateAmbienceGain(key);
+        });
+
+        ctrl.checkbox.addEventListener("change", () => {
+            if (!playing) return;
+            if (ctrl.checkbox.checked) {
+                startAmbienceSource(key);
+            } else {
+                updateAmbienceGain(key);
+            }
+        });
+    });
+
+
+    rainLevelSlider.addEventListener("input", () =>
+        ambienceSliderHandler("rain", rainLevelLabel, rainLevelSlider));
+    windLevelSlider.addEventListener("input", () =>
+        ambienceSliderHandler("wind", windLevelLabel, windLevelSlider));
+    fireplaceLevelSlider.addEventListener("input", () =>
+        ambienceSliderHandler("fireplace", fireplaceLevelLabel, fireplaceLevelSlider));
+    coffeeshopLevelSlider.addEventListener("input", () =>
+        ambienceSliderHandler("coffeeshop", coffeeshopLevelLabel, coffeeshopLevelSlider));
+
+    rainEnabledCheckbox.addEventListener("change", () => {
+        if (!playing) return;
+        if (rainEnabledCheckbox.checked) {
+            startAmbienceSource("rain");
+        }
+        updateAmbienceGain("rain");
+    });
+
+    windEnabledCheckbox.addEventListener("change", () => {
+        if (!playing) return;
+        if (windEnabledCheckbox.checked) {
+            startAmbienceSource("wind");
+        }
+        updateAmbienceGain("wind");
+    });
+
+    fireplaceEnabledCheckbox.addEventListener("change", () => {
+        if (!playing) return;
+        if (fireplaceEnabledCheckbox.checked) {
+            startAmbienceSource("fireplace");
+        }
+        updateAmbienceGain("fireplace");
+    });
+
+    coffeeshopEnabledCheckbox.addEventListener("change", () => {
+        if (!playing) return;
+        if (coffeeshopEnabledCheckbox.checked) {
+            startAmbienceSource("coffeeshop");
+        }
+        updateAmbienceGain("coffeeshop");
+    });
+
     // Display controls
     brightnessSlider.addEventListener("input", () => {
         const val = parseInt(brightnessSlider.value, 10);
@@ -935,18 +1497,10 @@
         }
     });
 
-    // visibility: optional pause if user doesn't want background playback
-    let wasPlayingBeforeHide = false;
+    // visibility: DO NOT auto-stop on hide; just resume if needed
     document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "hidden") {
-            wasPlayingBeforeHide = playing;
-            if (!backgroundToggle.checked && playing) {
-                stopAudio();
-            }
-        } else if (document.visibilityState === "visible") {
-            if (audioCtx && audioCtx.state === "suspended") {
-                audioCtx.resume();
-            }
+        if (audioCtx && audioCtx.state === "suspended") {
+            audioCtx.resume();
         }
     });
 
@@ -984,6 +1538,369 @@
             backgroundToggle.checked = cBackground === "1";
         }
     })();
+
+    // ---------- Background audio keep-alive loop ----------
+    setInterval(() => {
+        if (audioCtx && audioCtx.state === "suspended") {
+            audioCtx.resume();
+        }
+    }, 1000);
+
+    // ---------- Presets ----------
+    const USER_PRESETS_KEY = "focus_user_presets_v1";
+
+    const builtInPresets = {
+        deep_focus: {
+            toneEnabled: true,
+            volume: 70,
+            toneLevel: 80,
+            waveform: "sine",
+            mode: "mono",
+            modFreq: 584,
+            modDepth: 50,
+            noiseEnabled: true,
+            noiseType: "brown_soft",
+            noiseLevel: 70,
+            noiseLowCut: 80,
+            noiseHighCut: 6000,
+            rainEnabled: false,
+            rainLevel: 50,
+            windEnabled: false,
+            windLevel: 40,
+            fireplaceEnabled: false,
+            fireplaceLevel: 50,
+            coffeeshopEnabled: false,
+            coffeeshopLevel: 60,
+            themeColor: "blue",
+            themeShade: "medium",
+            brightness: 100,
+            contrast: 100,
+            glow: 100
+        },
+        rainy_cafe: {
+            toneEnabled: false,
+            volume: 80,
+            toneLevel: 0,
+            waveform: "sine",
+            mode: "mono",
+            modFreq: 500,
+            modDepth: 20,
+            noiseEnabled: true,
+            noiseType: "pink_warm",
+            noiseLevel: 65,
+            noiseLowCut: 120,
+            noiseHighCut: 7000,
+            rainEnabled: true,
+            rainLevel: 75,
+            windEnabled: false,
+            windLevel: 40,
+            fireplaceEnabled: false,
+            fireplaceLevel: 40,
+            coffeeshopEnabled: true,
+            coffeeshopLevel: 70,
+            themeColor: "peach",
+            themeShade: "light",
+            brightness: 100,
+            contrast: 100,
+            glow: 120
+        },
+        fireplace_night: {
+            toneEnabled: false,
+            volume: 60,
+            toneLevel: 0,
+            waveform: "triangle",
+            mode: "mono",
+            modFreq: 300,
+            modDepth: 10,
+            noiseEnabled: true,
+            noiseType: "brown_deep",
+            noiseLevel: 55,
+            noiseLowCut: 40,
+            noiseHighCut: 4000,
+            rainEnabled: false,
+            rainLevel: 50,
+            windEnabled: false,
+            windLevel: 30,
+            fireplaceEnabled: true,
+            fireplaceLevel: 80,
+            coffeeshopEnabled: false,
+            coffeeshopLevel: 60,
+            themeColor: "lavender",
+            themeShade: "dark",
+            brightness: 90,
+            contrast: 110,
+            glow: 130
+        },
+        windy_cliff: {
+            toneEnabled: true,
+            volume: 75,
+            toneLevel: 60,
+            waveform: "triangle",
+            mode: "poly",
+            modFreq: 900,
+            modDepth: 80,
+            noiseEnabled: true,
+            noiseType: "white_soft",
+            noiseLevel: 50,
+            noiseLowCut: 300,
+            noiseHighCut: 9000,
+            rainEnabled: false,
+            rainLevel: 50,
+            windEnabled: true,
+            windLevel: 85,
+            fireplaceEnabled: false,
+            fireplaceLevel: 40,
+            coffeeshopEnabled: false,
+            coffeeshopLevel: 40,
+            themeColor: "slate",
+            themeShade: "medium",
+            brightness: 100,
+            contrast: 105,
+            glow: 110
+        }
+    };
+
+    function getUserPresets() {
+        try {
+            const raw = localStorage.getItem(USER_PRESETS_KEY);
+            if (!raw) return {};
+            return JSON.parse(raw) || {};
+        } catch {
+            return {};
+        }
+    }
+
+    function saveUserPresets(map) {
+        try {
+            localStorage.setItem(USER_PRESETS_KEY, JSON.stringify(map));
+        } catch {}
+    }
+
+    function refreshUserPresetSelect() {
+        const presets = getUserPresets();
+        userPresetSelect.innerHTML = "";
+        const defaultOpt = document.createElement("option");
+        defaultOpt.value = "";
+        defaultOpt.textContent = Object.keys(presets).length ? "Select preset…" : "None saved yet";
+        userPresetSelect.appendChild(defaultOpt);
+
+        Object.keys(presets).sort().forEach(name => {
+            const opt = document.createElement("option");
+            opt.value = name;
+            opt.textContent = name;
+            userPresetSelect.appendChild(opt);
+        });
+    }
+
+    function collectCurrentSettings() {
+        const settings = {
+            toneEnabled: toneEnabledCheckbox.checked,
+            volume: parseInt(volumeSlider.value, 10),
+            toneLevel: parseInt(toneLevelSlider.value, 10),
+            waveform: waveformSelect.value,
+            mode: document.querySelector("input[name='mode']:checked").value,
+            modFreq: parseInt(modFreqSlider.value, 10),
+            modDepth: parseInt(modDepthSlider.value, 10),
+            noiseEnabled: noiseEnabledCheckbox.checked,
+            noiseType: noiseTypeSelect.value,
+            noiseLevel: parseInt(noiseLevelSlider.value, 10),
+            noiseLowCut: parseInt(noiseLowCutSlider.value, 10),
+            noiseHighCut: parseInt(noiseHighCutSlider.value, 10),
+            themeColor: currentThemeColor,
+            themeShade: currentThemeShade,
+            brightness: parseInt(brightnessSlider.value, 10),
+            contrast: parseInt(contrastSlider.value, 10),
+            glow: parseInt(glowSlider.value, 10)
+        };
+
+        // add ambience fields
+        Object.entries(ambienceControls).forEach(([key, ctrl]) => {
+            settings[`${key}Enabled`] = ctrl.checkbox.checked;
+            settings[`${key}Level`] = parseInt(ctrl.slider.value, 10);
+        });
+
+        return settings;
+    }
+
+
+    function applyPreset(preset) {
+        if (!preset) return;
+
+        // Tone & master
+        toneEnabledCheckbox.checked = preset.toneEnabled;
+        volumeSlider.value = preset.volume;
+        volLabel.textContent = preset.volume + "%";
+        toneLevelSlider.value = preset.toneLevel;
+        toneLevelLabel.textContent = preset.toneLevel + "%";
+        waveformSelect.value = preset.waveform;
+        const modeRadio = Array.from(modeRadios).find(r => r.value === preset.mode);
+        if (modeRadio) modeRadio.checked = true;
+        modFreqSlider.value = preset.modFreq;
+        modFreqLabel.textContent = preset.modFreq + " Hz";
+        modDepthSlider.value = preset.modDepth;
+        modDepthLabel.textContent = preset.modDepth;
+
+        // Noise
+        noiseEnabledCheckbox.checked = preset.noiseEnabled;
+        noiseTypeSelect.value = preset.noiseType;
+        noiseLevelSlider.value = preset.noiseLevel;
+        noiseLevelLabel.textContent = preset.noiseLevel + "%";
+        noiseLowCutSlider.value = preset.noiseLowCut;
+        noiseLowCutLabel.textContent = preset.noiseLowCut + " Hz";
+        noiseHighCutSlider.value = preset.noiseHighCut;
+        noiseHighCutLabel.textContent = preset.noiseHighCut + " Hz";
+
+        // Display
+        brightnessSlider.value = preset.brightness;
+        brightnessLabel.textContent = preset.brightness + "%";
+        contrastSlider.value = preset.contrast;
+        contrastLabel.textContent = preset.contrast + "%";
+        glowSlider.value = preset.glow;
+        glowLabel.textContent = preset.glow + "%";
+        shadeSelect.value = preset.themeShade;
+        applyTheme(preset.themeColor, preset.themeShade);
+
+        // Ambience from preset (if defined)
+        Object.entries(ambienceControls).forEach(([key, ctrl]) => {
+            const enabledField = `${key}Enabled`;
+            const levelField = `${key}Level`;
+
+            if (enabledField in preset) {
+                ctrl.checkbox.checked = !!preset[enabledField];
+            } else {
+                ctrl.checkbox.checked = false;
+            }
+
+            if (levelField in preset) {
+                const lvl = parseInt(preset[levelField], 10);
+                if (!Number.isNaN(lvl)) {
+                    ctrl.slider.value = lvl;
+                }
+            }
+            ctrl.label.textContent = ctrl.slider.value + "%";
+        });
+
+        if (playing) {
+            // Re-apply audio side
+            volumeSlider.dispatchEvent(new Event("input"));
+            toneLevelSlider.dispatchEvent(new Event("input"));
+            toneEnabledCheckbox.dispatchEvent(new Event("change"));
+            modFreqSlider.dispatchEvent(new Event("input"));
+            modDepthSlider.dispatchEvent(new Event("input"));
+            noiseTypeSelect.dispatchEvent(new Event("change"));
+            noiseLevelSlider.dispatchEvent(new Event("input"));
+            noiseLowCutSlider.dispatchEvent(new Event("input"));
+            noiseHighCutSlider.dispatchEvent(new Event("input"));
+
+            Object.keys(ambienceControls).forEach(key => {
+                const ctrl = ambienceControls[key];
+                if (ctrl.checkbox.checked) {
+                    startAmbienceSource(key);
+                } else {
+                    updateAmbienceGain(key);
+                }
+            });
+        } else {
+            // At least update the visual display settings
+            brightnessSlider.dispatchEvent(new Event("input"));
+            contrastSlider.dispatchEvent(new Event("input"));
+            glowSlider.dispatchEvent(new Event("input"));
+        }
+    }
+
+
+    builtinPresetSelect.addEventListener("change", () => {
+        const key = builtinPresetSelect.value;
+        if (!key) return;
+        const preset = builtInPresets[key];
+        applyPreset(preset);
+    });
+
+    savePresetBtn.addEventListener("click", () => {
+        const name = (userPresetNameInput.value || "").trim();
+        if (!name) return;
+        const presets = getUserPresets();
+        presets[name] = collectCurrentSettings();
+        saveUserPresets(presets);
+        refreshUserPresetSelect();
+        userPresetSelect.value = name;
+    });
+
+    deletePresetBtn.addEventListener("click", () => {
+        const selected = userPresetSelect.value;
+        if (!selected) return;
+        const presets = getUserPresets();
+        if (presets[selected]) {
+            delete presets[selected];
+            saveUserPresets(presets);
+            refreshUserPresetSelect();
+        }
+    });
+
+    userPresetSelect.addEventListener("change", () => {
+        const name = userPresetSelect.value;
+        if (!name) return;
+        const presets = getUserPresets();
+        applyPreset(presets[name]);
+    });
+
+    refreshUserPresetSelect();
+
+    // ---------- PWA install prompt ----------
+    window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        installBanner.classList.remove("hidden");
+    });
+
+    installBtn.addEventListener("click", async () => {
+        if (!deferredInstallPrompt) return;
+        deferredInstallPrompt.prompt();
+        const choice = await deferredInstallPrompt.userChoice;
+        deferredInstallPrompt = null;
+        if (rememberToggle && rememberToggle.checked) {
+            setCookie("focus_install_outcome", choice.outcome || "", 365);
+        }
+        installBanner.classList.add("hidden");
+    });
+
+    installClose.addEventListener("click", () => {
+        installBanner.classList.add("hidden");
+        if (rememberToggle && rememberToggle.checked) {
+            setCookie("focus_install_dismissed", "1", 365);
+        }
+    });
+
+    function isIos() {
+        return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+    }
+
+    function isStandalone() {
+        const iosStandalone = window.navigator.standalone === true;
+        const displayModeStandalone = window.matchMedia('(display-mode: standalone)').matches;
+        return iosStandalone || displayModeStandalone;
+    }
+
+    window.addEventListener("load", () => {
+        const dismissed = getCookie("focus_install_dismissed") === "1";
+        if (isIos() && !isStandalone() && !dismissed) {
+            installText.innerHTML =
+                "<strong>Install FM Focus?</strong> On iPhone: tap the share icon ▢↑ and choose <em>Add to Home Screen</em>.";
+            if (installBtn) {
+                installBtn.style.display = "none";
+            }
+            installBanner.classList.remove("hidden");
+        }
+    });
+
+    // ---------- Service worker registration ----------
+    if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+            navigator.serviceWorker.register("./sw.js").catch((err) => {
+                console.error("SW registration failed:", err);
+            });
+        });
+    }
 </script>
 
 </body>
